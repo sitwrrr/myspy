@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="css/styles.css">
+    <title>myspy - AI桌宠</title>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <!-- 字幕显示 -->
+    <div id="subtitle-container">
+        <p id="subtitle-text"></p>
+    </div>
+
+    <!-- 聊天输入框 -->
+    <div id="text-chat-container">
+        <div id="chat-input-container">
+            <input type="text" id="chat-input" placeholder="输入消息..." autocomplete="off">
+            <button id="chat-send-btn">发送</button>
+        </div>
+    </div>
+
+    <!-- 自定义右键菜单 -->
+    <div id="custom-context-menu" style="display: none; position: fixed; z-index: 99999;">
+        <div class="ctx-menu-item" data-action="copy">复制</div>
+        <div class="ctx-menu-item" data-action="paste">粘贴</div>
+        <div class="ctx-menu-separator"></div>
+        <div class="ctx-menu-item" data-action="devtools">开发者工具</div>
+    </div>
+
+    <!-- 引入 Live2D 依赖 -->
+    <script src="libs/live2d.min.js"></script>
+    <script src="libs/live2dcubismcore.min.js"></script>
+    <script src="libs/pixi.min.js"></script>
+    <script src="libs/pixi-live2d-display.min.js"></script>
+    <script src="libs/pixi-live2d-display-extra.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "baimeimo.moc3",
+		"Textures": [
+			"baimeimo.4096/texture_00.png",
+			"baimeimo.4096/texture_01.png",
+			"baimeimo.4096/texture_02.png",
+			"baimeimo.4096/texture_03.png",
+			"baimeimo.4096/texture_04.png",
+			"baimeimo.4096/texture_05.png",
+			"baimeimo.4096/texture_06.png",
+			"baimeimo.4096/texture_07.png"
+		],
+		"Physics": "baimeimo.physics3.json",
+		"DisplayInfo": "baimeimo.cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		}
+	]
+}

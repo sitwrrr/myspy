@@ -1,0 +1,29 @@
+{
+  "servers": {
+    "file-operations": {
+      "command": "node",
+      "args": [
+        "./mcp/tools/file-operations.js"
+      ]
+    },
+    "browser-control": {
+      "command": "node",
+      "args": [
+        "./mcp/tools/browser-control.js"
+      ]
+    },
+    "system-tools": {
+      "command": "node",
+      "args": [
+        "./mcp/tools/system-tools.js"
+      ]
+    },
+    "xiaomi-home": {
+      "command": "node",
+      "args": [
+        "./mcp/tools/xiaomi-home.js"
+      ],
+      "disabled": true
+    }
+  }
+}

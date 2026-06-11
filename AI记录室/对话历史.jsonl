@@ -1,0 +1,17 @@
+{"role":"user","content":"在我的桌面上创建iu的文件夹"}
+{"role":"assistant","content":null,"tool_calls":[{"id":"call_38bb7a99e4fd45089989f1fc","type":"function","function":{"name":"get_system_info","arguments":"{\"info_type\": \"os\"}"}}]}
+{"role":"assistant","content":null,"tool_calls":[{"id":"call_6d333fa6141a4493abce854e","type":"function","function":{"name":"execute_command","arguments":"{\"command\": \"echo %USERPROFILE%\\\\Desktop\"}"}}]}
+{"role":"assistant","content":null,"tool_calls":[{"id":"call_f0c58f2152144f4cb03abe36","type":"function","function":{"name":"create_directory","arguments":"{\"path\": \"C:\\\\Users\\\\Lenovo\\\\Desktop\\\\iu\"}"}}]}
+{"role":"assistant","content":"好啦～在你桌上放了个叫“iu”的文件夹哦！整理东西还是放照片呀？"}
+{"role":"user","content":"打开百度"}
+{"role":"assistant","content":null,"tool_calls":[{"id":"call_15da5d7ac2c44176822c9f61","type":"function","function":{"name":"open_url","arguments":"{\"url\": \"https://www.baidu.com\"}"}}]}
+{"role":"assistant","content":"已经打开啦～ 想搜点什么有趣的东西吗？"}
+{"role":"user","content":"打开b站"}
+{"role":"assistant","content":null,"tool_calls":[{"id":"call_4352c06176ba4d4c8b782c3e","type":"function","function":{"name":"open_url","arguments":"{\"url\": \"https://www.bilibili.com\"}"}}]}
+{"role":"assistant","content":"搞定～B站已经打开了。是不是又要去刷那些搞笑视频啦？"}
+{"role":"user","content":"明天天津天气怎么样"}
+{"role":"assistant","content":null,"tool_calls":[{"id":"call_b815f710b6ab4848b42b382f","type":"function","function":{"name":"search_web","arguments":"{\"query\": \"天津明天天气\", \"num_results\": 3}"}}]}
+{"role":"assistant","content":null,"tool_calls":[{"id":"call_33dbeece2b3a440e924da15f","type":"function","function":{"name":"search_web","arguments":"{\"query\": \"天津天气预报 明天\", \"num_results\": 5}"}}]}
+{"role":"assistant","content":null,"tool_calls":[{"id":"call_a8a91d1433fb4ee99cd29d20","type":"function","function":{"name":"open_url","arguments":"{\"url\": \"http://www.weather.com.cn/weather/101030100.shtml\"}"}}]}
+{"role":"assistant","content":null,"tool_calls":[{"id":"call_a2309d48e8694667a0b0295d","type":"function","function":{"name":"fetch_page","arguments":"{\"url\": \"http://www.weather.com.cn/weather/101030100.shtml\", \"max_length\": 3000}"}}]}
+{"role":"assistant","content":" 明天天津天气晴着呢～温度大概30度到21度，挺舒服的。要不要出去玩呀？"}

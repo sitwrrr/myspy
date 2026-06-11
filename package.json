@@ -1,0 +1,17 @@
+{
+  "name": "myspy",
+  "version": "1.0.0",
+  "description": "Minimal Live2D AI Companion Desktop Pet",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "axios": "^1.17.0",
+    "electron": "^28.0.0",
+    "screenshot-desktop": "^1.15.4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

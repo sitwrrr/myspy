@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Python environments
+venv/
+__pycache__/
+*.pyc
+
+# Large bundled runtimes
+GPT-SoVITS-Bundle/
+
+# ML model caches and weights
+huggingface_cache/
+full-hub/asr-hub/model/
+full-hub/bert-hub/*.bin
+full-hub/bert-hub/*.onnx
+full-hub/bert-hub/*.pkl
+full-hub/bert-hub/*.safetensors
+
+# Voice models
+Voice_Model_Factory/
+
+# 3D models (too large for git)
+3D/*.vrm
+
+# 2D model textures (large PNG files)
+2D/*/*.4096/
+2D/*/*.2048/
+2D/*/*.8192/
+2D/*/motion/
+
+# Runtime logs
+*.log
+
+# OS files
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# DLC plugins (large)
+plugins-dlc/memos/memos_system/models/
+plugins-dlc/memos/memos_system/.qdrant/

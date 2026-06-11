@@ -1,0 +1,23 @@
+{
+  "play_key": {
+    "title": "播放/暂停快捷键",
+    "description": "控制音乐播放/暂停的全局快捷键",
+    "type": "string",
+    "default": "Ctrl+Alt+P",
+    "value": "Ctrl+Alt+P"
+  },
+  "next_key": {
+    "title": "下一首快捷键",
+    "description": "切换下一首歌曲的全局快捷键",
+    "type": "string",
+    "default": "Ctrl+Alt+Right",
+    "value": "Ctrl+Alt+Right"
+  },
+  "prev_key": {
+    "title": "上一首快捷键",
+    "description": "切换上一首歌曲的全局快捷键",
+    "type": "string",
+    "default": "Ctrl+Alt+Left",
+    "value": "Ctrl+Alt+Left"
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "nodes": [
+    {
+      "id": "da6ac57c-06e2-492b-8af2-4984fe25771f",
+      "entity_type": "person",
+      "name": "用户",
+      "properties": {
+        "description": "用户提到的人物"
+      },
+      "user_id": "feiniu_default",
+      "created_at": "2026-06-07T18:54:24.546083",
+      "updated_at": "2026-06-07T18:54:24.546083"
+    },
+    {
+      "id": "b6173bc3-3f1c-4b68-9a45-0f2e06427b2b",
+      "entity_type": "object",
+      "name": "苹果",
+      "properties": {
+        "description": "物品"
+      },
+      "user_id": "feiniu_default",
+      "created_at": "2026-06-07T18:54:24.548192",
+      "updated_at": "2026-06-07T18:54:24.548192"
+    },
+    {
+      "id": "00bbcc34-5f51-4d58-ae37-f5b7cd442a9c",
+      "entity_type": "preference",
+      "name": "冰淇淋",
+      "properties": {
+        "description": "食物偏好"
+      },
+      "user_id": "feiniu_default",
+      "created_at": "2026-06-07T19:19:27.959482",
+      "updated_at": "2026-06-07T19:19:27.959482"
+    },
+    {
+      "id": "51728dc9-f969-4798-9097-4666adaeca48",
+      "entity_type": "preference",
+      "name": "沧州火锅鸡",
+      "properties": {
+        "description": "一种菜品偏好"
+      },
+      "user_id": "feiniu_default",
+      "created_at": "2026-06-07T19:27:23.815649",
+      "updated_at": "2026-06-07T19:27:23.815649"
+    },
+    {
+      "id": "9d6c49ec-1987-4399-973f-d04fa9fcf25c",
+      "entity_type": "object",
+      "name": "羊肠子",
+      "properties": {
+        "description": "一种食物"
+      },
+      "user_id": "feiniu_default",
+      "created_at": "2026-06-07T20:42:16.687621",
+      "updated_at": "2026-06-07T20:42:16.687621"
+    }
+  ],
+  "edges": [
+    {
+      "source": "da6ac57c-06e2-492b-8af2-4984fe25771f",
+      "target": "b6173bc3-3f1c-4b68-9a45-0f2e06427b2b",
+      "relation_type": "LIKES",
+      "properties": {
+        "description": "用户喜欢吃苹果"
+      },
+      "created_at": "2026-06-07T18:54:24.548192"
+    },
+    {
+      "source": "da6ac57c-06e2-492b-8af2-4984fe25771f",
+      "target": "00bbcc34-5f51-4d58-ae37-f5b7cd442a9c",
+      "relation_type": "LIKES",
+      "properties": {
+        "description": "用户喜欢吃冰淇淋"
+      },
+      "created_at": "2026-06-07T19:19:27.959482"
+    },
+    {
+      "source": "da6ac57c-06e2-492b-8af2-4984fe25771f",
+      "target": "51728dc9-f969-4798-9097-4666adaeca48",
+      "relation_type": "LIKES",
+      "properties": {
+        "description": "用户喜欢吃沧州火锅鸡"
+      },
+      "created_at": "2026-06-07T19:27:23.815649"
+    },
+    {
+      "source": "da6ac57c-06e2-492b-8af2-4984fe25771f",
+      "target": "9d6c49ec-1987-4399-973f-d04fa9fcf25c",
+      "relation_type": "LIKES",
+      "properties": {
+        "description": "用户喜欢吃羊肠子"
+      },
+      "created_at": "2026-06-07T20:42:16.693942"
+    }
+  ],
+  "metadata": {
+    "saved_at": "2026-06-07T20:42:16.693942",
+    "node_count": 5,
+    "edge_count": 4
+  }
+}

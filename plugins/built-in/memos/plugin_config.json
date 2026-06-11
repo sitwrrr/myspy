@@ -1,0 +1,114 @@
+{
+  "api_url": {
+    "title": "MemOS API 地址",
+    "description": "MemOS 后端服务的地址，默认 http://127.0.0.1:8003",
+    "type": "string",
+    "default": "http://127.0.0.1:8003",
+    "value": "http://127.0.0.1:8003"
+  },
+  "inject_top_k": {
+    "title": "注入记忆条数",
+    "description": "每次自动注入的最大记忆条数",
+    "type": "int",
+    "default": 3,
+    "value": 3
+  },
+  "similarity_threshold": {
+    "title": "相似度阈值",
+    "description": "记忆检索的最低相似度（0~1），低于此值不注入",
+    "type": "float",
+    "default": 0.6,
+    "value": 0.4
+  },
+  "save_interval": {
+    "title": "保存间隔（轮）",
+    "description": "每隔多少轮对话批量保存一次记忆到后端",
+    "type": "int",
+    "default": 5,
+    "value": 5
+  },
+  "backend_llm": {
+    "title": "后端 LLM 配置",
+    "description": "MemOS 后端用于总结对话、提取实体的 LLM（非对话模型）",
+    "type": "object",
+    "fields": {
+      "model": {
+        "title": "模型名称",
+        "description": "后端记忆处理使用的 LLM 模型",
+        "type": "string",
+        "default": "deepseek-ai/DeepSeek-V3.2",
+        "value": ""
+      },
+      "api_key": {
+        "title": "API Key",
+        "description": "后端 LLM 的 API 密钥",
+        "type": "string",
+        "default": "",
+        "value": ""
+      },
+      "base_url": {
+        "title": "Base URL",
+        "description": "后端 LLM 的 API 地址",
+        "type": "string",
+        "default": "https://api.siliconflow.cn/v1",
+        "value": ""
+      }
+    }
+  },
+  "backend_search": {
+    "title": "后端检索配置",
+    "description": "MemOS 后端的混合检索策略设置",
+    "type": "object",
+    "fields": {
+      "enable_bm25": {
+        "title": "启用 BM25 混合检索",
+        "description": "开启向量 + BM25 关键词混合检索，提高召回率",
+        "type": "bool",
+        "default": true,
+        "value": true
+      },
+      "bm25_weight": {
+        "title": "BM25 权重",
+        "description": "BM25 在混合检索中的权重（0~1），向量权重 = 1 - 此值",
+        "type": "float",
+        "default": 0.3,
+        "value": 0.3
+      },
+      "enable_graph_query": {
+        "title": "启用知识图谱增强",
+        "description": "检索时利用实体关系图谱扩展结果",
+        "type": "bool",
+        "default": true,
+        "value": true
+      }
+    }
+  },
+  "backend_features": {
+    "title": "后端功能开关",
+    "description": "控制 MemOS 后端的高级功能",
+    "type": "object",
+    "fields": {
+      "entity_extraction": {
+        "title": "自动实体提取",
+        "description": "添加记忆时自动提取人名、地点等实体到知识图谱",
+        "type": "bool",
+        "default": true,
+        "value": true
+      },
+      "image_memory": {
+        "title": "图片记忆",
+        "description": "启用图片上传、截图保存等图片记忆功能",
+        "type": "bool",
+        "default": true,
+        "value": true
+      },
+      "image_auto_describe": {
+        "title": "图片自动描述",
+        "description": "上传图片时自动用 LLM 生成描述文本",
+        "type": "bool",
+        "default": true,
+        "value": true
+      }
+    }
+  }
+}

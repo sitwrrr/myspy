@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myspy 控制面板</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- 左侧导航 -->
+        <nav class="sidebar">
+            <div class="nav-item active" data-tab="pet">桌宠管理</div>
+            <div class="nav-item" data-tab="log">桌宠日志</div>
+            <div class="nav-item" data-tab="history">对话历史</div>
+            <div class="nav-item" data-tab="chat">对话设置</div>
+            <div class="nav-item" data-tab="llm">LLM 配置</div>
+            <div class="nav-item" data-tab="tts">语音克隆</div>
+            <div class="nav-item" data-tab="plugins">插件设置</div>
+            <div class="nav-item" data-tab="mcp">MCP 服务</div>
+            <div class="nav-item" data-tab="emotion">表情映射</div>
+            <div class="nav-item" data-tab="skill">Skill 人设</div>
+        </nav>
+
+        <!-- 右侧内容 -->
+        <main class="content">
+            <!-- 桌宠管理 -->
+            <div class="tab-panel active" id="tab-pet">
+                <h2>桌宠管理</h2>
+                <div class="group">
+                    <div class="pet-status-row">
+                        <span class="status-dot" id="status-dot"></span>
+                        <span id="pet-status">未运行</span>
+                    </div>
+                    <div class="btn-group">
+                        <button id="btn-start-pet" class="btn btn-primary">启动桌宠</button>
+                        <button id="btn-stop-pet" class="btn btn-danger">停止桌宠</button>
+                    </div>
+                </div>
+                <div class="group">
+                    <h3>模型列表</h3>
+                    <div id="model-list" class="model-list"></div>
+                    <button id="btn-refresh-models" class="btn">刷新列表</button>
+                    <button id="btn-reset-position" class="btn">复位皮套位置</button>
+                </div>
+                <div class="group">
+                    <h3>ASR 服务器</h3>
+                    <div class="form-row">
+                        <label>VAD 地址：</label>
+                        <input type="text" id="asr-vad-url" placeholder="ws://127.0.0.1:1000/v1/ws/vad">
+                    </div>
+                    <div class="form-row">
+                        <label>识别地址：</label>
+                        <input type="text" id="asr-upload-url" placeholder="http://127.0.0.1:1000/v1/upload_audio">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 对话设置 -->
+            <div class="tab-panel" id="tab-chat">
+                <h2>对话设置</h2>
+                <div class="sub-tabs">
+                    <div class="sub-tab active" data-subtab="chat-basic">基础设置</div>
+                    <div class="sub-tab" data-subtab="chat-voice">语音设置</div>
+                    <div class="sub-tab" data-subtab="chat-smart">智能功能</div>
+                </div>
+                <!-- 基础设置 -->
+                <div class="sub-tab-panel active" id="subtab-chat-basic">
+                    <div class="group">
+                        <div class="form-row">
+                            <label>开场白：</label>
+                            <input type="text" id="intro-text" placeholder="桌宠启动时说的第一句话">
+                        </div>
+                        <div class="form-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="show-chat-box" checked>
+                                文字输入框（可打字交互）
+                            </label>
+                        </div>
+                        <div class="form-row inline">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-context-limit" checked>
+                                启用上下文限制（超出对话轮次截断）
+                            </label>
+                            <div class="inline-group">
+                                <label>最大消息数：</label>
+                                <input type="number" id="max-messages" value="18" class="small-input">
+                            </div>
+                        </div>
+                        <div class="form-row inline">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="persistent-history">
+                                持久化对话历史（重启后恢复）
+                            </label>
+                        </div>
+                        <div class="form-row inline">
+                            <label>温度：</label>
+                            <input type="number" id="temperature" value="0.60" step="0.05" min="0" max="2" class="temp-input">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-temperature">
+                                启用温度
+                            </label>
+                        </div>
+                        <div class="hint">
+                            提示：上下文限制与上下文压缩插件不要同时开启。上下文限制直接删除旧消息，压缩插件用LLM总结旧消息，同时开会导致压缩白做。建议二选一。
+                        </div>
+                        <div class="form-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="subtitle-enabled" checked>
+                                启用字幕显示
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="hide-model">
+                                隐藏皮套
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <!-- 语音设置 -->
+                <div class="sub-tab-panel" id="subtab-chat-voice">
+                    <div class="group">
+                        <div class="form-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-asr" checked>
+                                启用 ASR（语音识别，若关闭V键也失效）
+                            </label>
+                        </div>
+                        <div class="form-row inline">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-ptt">
+                                按键说话（按住V键）
+                            </label>
+                            <div class="inline-group">
+                                <label>超时：</label>
+                                <input type="number" id="ptt-max-timeout" value="10" min="1" max="60" step="1" class="small-input">
+                                <label>秒</label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="voice-barge-in">
+                                语音打断（说话时打断TTS）
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-tts" checked>
+                                启用 TTS（语音合成）
+                            </label>
+                        </div>
+                        <div class="form-row inline">
+                            <label>TTS 语言：</label>
+                            <select id="tts-language">
+                                <option value="zh">zh - 中文</option>
+                                <option value="en">en - English</option>
+                                <option value="ja">ja - 日本語</option>
+                            </select>
+                        </div>
+                        <div class="hint">
+                            提示：语音识别使用本地 FunASR，需先启动 ASR 服务器（2.ASR.bat）。
+                        </div>
+                        <div class="hint">
+                            提示：鼠标焦点不在桌宠窗口时，V键无法实时松键停止录音，将依靠上方设置的超时自动停止。
+                        </div>
+                    </div>
+                </div>
+                <!-- 智能功能 -->
+                <div class="sub-tab-panel" id="subtab-chat-smart">
+                    <div class="group">
+                        <h3>BERT 智能截图</h3>
+                        <div class="form-row inline">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="bert-enabled">
+                                启用 BERT 分类（自动判断是否需要截图）
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label>BERT 地址：</label>
+                            <input type="text" id="bert-url" placeholder="http://127.0.0.1:6007/classify">
+                        </div>
+                        <div class="hint">
+                            提示：需要先启动 BERT 服务（运行 full-hub/启动BERT服务.bat）。BERT 会在用户发消息前自动判断是否需要截图，无需 LLM 额外调用工具。
+                        </div>
+                    </div>
+                    <div class="group">
+                        <h3>MCP 工具协议</h3>
+                        <div class="form-row inline">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="mcp-enabled">
+                                启用 MCP（连接外部工具服务器）
+                            </label>
+                        </div>
+                        <div class="hint">
+                            提示：MCP 允许桌宠调用外部程序的功能。配置文件位于 mcp/mcp_config.json，可在 mcp/tools/ 目录放置 .js 或 .py 文件自动注册工具。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LLM 配置 -->
+            <div class="tab-panel" id="tab-llm">
+                <h2>LLM 配置</h2>
+                <div class="sub-tabs">
+                    <div class="sub-tab active" data-subtab="llm-basic">基础配置</div>
+                    <div class="sub-tab" data-subtab="llm-vision">辅助视觉模型配置</div>
+                </div>
+                <!-- 基础配置 -->
+                <div class="sub-tab-panel active" id="subtab-llm-basic">
+                    <div class="group">
+                        <div class="group-header">
+                            <h3>LLM API 设置</h3>
+                            <button id="btn-goto-prompts" class="btn btn-small">提示词广场</button>
+                        </div>
+                        <div class="form-row">
+                            <label>API 地址：</label>
+                            <input type="text" id="llm-api-url" placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-row">
+                            <label>API 密钥：</label>
+                            <input type="password" id="llm-api-key">
+                        </div>
+                        <div class="form-row">
+                            <label>模型名称：</label>
+                            <input type="text" id="llm-model">
+                        </div>
+                        <div class="form-row">
+                            <label>系统提示词：</label>
+                            <textarea id="llm-system-prompt" rows="10"></textarea>
+                        </div>
+                        <button id="btn-save-llm" class="btn btn-primary">保存配置</button>
+                    </div>
+                </div>
+                <!-- 辅助视觉模型配置 -->
+                <div class="sub-tab-panel" id="subtab-llm-vision">
+                    <div class="group">
+                        <div class="hint" style="margin-bottom: 15px;">
+                            说明：当主模型（LLM）不支持图片识别时，可以启用此配置。在需要视觉功能时，系统会自动使用此辅助模型处理图片。
+                        </div>
+                        <div class="form-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="use-vision-model">
+                                启用辅助视觉模型
+                            </label>
+                        </div>
+                        <h4>视觉模型 API 配置</h4>
+                        <div class="form-row">
+                            <label>API KEY：</label>
+                            <input type="password" id="vision-model-api-key" placeholder="输入视觉模型的 API 密钥">
+                        </div>
+                        <div class="form-row">
+                            <label>API URL：</label>
+                            <input type="text" id="vision-model-api-url" placeholder="输入视觉模型的 API URL">
+                        </div>
+                        <div class="form-row">
+                            <label>模型名称：</label>
+                            <input type="text" id="vision-model-name" placeholder="例如：qwen-vl-max">
+                        </div>
+                        <button id="btn-save-vision" class="btn btn-primary">保存视觉模型配置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 提示词广场 -->
+            <div class="tab-panel" id="tab-prompts">
+                <h2>提示词广场</h2>
+                <button id="btn-back-llm" class="btn btn-small" style="margin-bottom: 15px;">← 返回 LLM 配置</button>
+                <div class="group">
+                    <div class="prompt-plaza-header">
+                        <button id="btn-add-prompt" class="btn btn-small">+ 添加提示词</button>
+                    </div>
+                    <div id="prompt-plaza-list" class="prompt-plaza-list"></div>
+                </div>
+            </div>
+
+            <!-- 语音克隆 -->
+            <div class="tab-panel" id="tab-tts">
+                <h2>语音克隆</h2>
+                <div class="group">
+                    <h3>GPT-SoVITS 模型配置</h3>
+                    <div class="form-row">
+                        <label>角色名称：</label>
+                        <input type="text" id="tts-role-name" placeholder="输入角色名称，用于生成文件夹名">
+                    </div>
+                    <div class="form-row">
+                        <label>SoVITS 模型文件（.pth）：</label>
+                        <div class="file-drop" id="model-file-drop">
+                            <input type="file" id="model-file-input" accept=".pth" style="display: none;">
+                            <div class="file-drop-text">选择 .pth 模型文件 或 拖拽到此处</div>
+                        </div>
+                        <div id="model-file-status" class="file-status">未上传模型文件（.pth）</div>
+                    </div>
+                    <div class="form-row">
+                        <label>GPT 模型文件（.ckpt）：</label>
+                        <div class="file-drop" id="ckpt-file-drop">
+                            <input type="file" id="ckpt-file-input" accept=".ckpt" style="display: none;">
+                            <div class="file-drop-text">选择 .ckpt 模型文件 或 拖拽到此处</div>
+                        </div>
+                        <div id="ckpt-file-status" class="file-status">未上传模型文件（.ckpt）</div>
+                    </div>
+                    <div class="form-row">
+                        <label>参考音频（.wav）：</label>
+                        <div class="file-drop" id="audio-file-drop">
+                            <input type="file" id="audio-file-input" accept=".wav" style="display: none;">
+                            <div class="file-drop-text">选择音频文件 或 拖拽到此处</div>
+                        </div>
+                        <div id="audio-file-status" class="file-status">未上传参考音频（.wav）</div>
+                    </div>
+                    <div class="form-row">
+                        <label>参考音频语种：</label>
+                        <select id="tts-ref-lang">
+                            <option value="zh">zh - 中文</option>
+                            <option value="en">en - 英语</option>
+                            <option value="ja">ja - 日语</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>参考音频的文本内容：</label>
+                        <textarea id="tts-ref-text" rows="3" placeholder="请输入参考音频对应的文本内容"></textarea>
+                    </div>
+                    <button id="btn-generate-tts-bat" class="btn btn-primary">生成 TTS 的 bat 文件</button>
+                    <div id="tts-status" class="hint" style="margin-top: 10px;">状态：请上传文件并生成配置</div>
+                </div>
+            </div>
+
+            <!-- 日志 -->
+            <div class="tab-panel" id="tab-log">
+                <h2>日志</h2>
+                <div class="log-grid">
+                    <div class="log-panel">
+                        <h3>系统日志</h3>
+                        <div id="pet-log" class="log-container"></div>
+                    </div>
+                    <div class="log-panel">
+                        <h3>插件日志</h3>
+                        <div id="tool-log" class="log-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 对话历史 -->
+            <div class="tab-panel" id="tab-history">
+                <h2>对话历史</h2>
+                <div class="group">
+                    <div class="form-row inline">
+                        <button id="btn-refresh-history" class="btn">刷新</button>
+                        <button id="btn-clear-history" class="btn btn-danger">清空历史</button>
+                        <span id="history-count" class="hint">共 0 条对话</span>
+                    </div>
+                </div>
+                <div class="group">
+                    <div id="history-container" class="log-container" style="height: 500px;"></div>
+                </div>
+            </div>
+
+            <!-- 插件设置 -->
+            <div class="tab-panel" id="tab-plugins">
+                <h2>插件设置</h2>
+                <div id="plugin-list" class="plugin-list"></div>
+            </div>
+
+            <!-- MCP 服务 -->
+            <div class="tab-panel" id="tab-mcp">
+                <h2>MCP 服务</h2>
+                <div class="group">
+                    <h3>服务管理</h3>
+                    <div id="mcp-server-list" class="mcp-server-list"></div>
+                    <div class="hint" style="margin-top: 10px;">
+                        提示：配置文件位于 mcp/mcp_config.json。在 mcp/tools/ 目录放置 .js 文件可自动注册新工具。修改配置后需重启桌宠生效。
+                    </div>
+                </div>
+                <div class="group">
+                    <h3>已注册工具 <span id="mcp-tool-count" class="hint"></span></h3>
+                    <div id="mcp-tool-list" class="mcp-tool-list"></div>
+                </div>
+            </div>
+
+            <!-- 模型表情控制 -->
+            <div class="tab-panel" id="tab-emotion">
+                <h2>模型表情控制</h2>
+                <div class="group">
+                    <p style="color:#888;font-size:12px;">点击按钮切换模型的表情/配件。再次点击关闭。</p>
+                    <div id="emotion-mapping-fields"></div>
+                </div>
+            </div>
+
+            <!-- Skill 人设 -->
+            <div class="tab-panel" id="tab-skill">
+                <h2>Skill 人设</h2>
+                <div class="group">
+                    <p style="color:#888;font-size:12px;">Skill 是预定义的 AI 人格模板（SOUL.md + SKILL.md），启用后会注入到系统 Prompt 中。将 Skill 文件夹放入 skills/ 目录即可自动识别。</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="color:#888;font-size:12px;">skills/ 目录下的 Skill 列表</span>
+                        <button class="btn btn-primary btn-sm" onclick="loadSkillList()" style="font-size:11px;padding:2px 8px;">🔄 刷新</button>
+                    </div>
+                    <div id="skill-list"></div>
+                </div>
+                <div class="group">
+                    <h3>Skill 预览</h3>
+                    <div id="skill-preview" style="max-height:400px;overflow-y:auto;">
+                        <p style="color:#888;font-size:12px;">点击 Skill 名称查看内容</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 插件配置弹窗 -->
+    <div id="plugin-config-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="plugin-config-title">插件配置</h3>
+                <button id="btn-close-modal" class="btn-close">&times;</button>
+            </div>
+            <div id="plugin-config-body" class="modal-body"></div>
+            <div class="modal-footer">
+                <button id="btn-save-plugin-config" class="btn btn-primary">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
