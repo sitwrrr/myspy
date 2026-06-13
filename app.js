@@ -1009,7 +1009,7 @@ async function callLLMStream(messages, tools = null, onChunk = null) {
 }
 
 // 发送消息
-async function sendMessage(text) {
+async function sendMessage(text, options = {}) {
     // 清除之前的打断标志
     appState.clearInterrupted()
 
@@ -1018,7 +1018,7 @@ async function sendMessage(text) {
     }
     if (!text || !config) return
     chatInput.value = ''
-    showSubtitle('你: ' + text)
+    if (!options.hideSubtitle) showSubtitle('你: ' + text)
 
     messages.push({ role: 'user', content: text })
 
@@ -1069,7 +1069,7 @@ async function sendMessage(text) {
             if (needScreenshot) {
                 screenshotBase64 = await screenshotManager.takeScreenshot()
                 if (screenshotBase64) {
-                    log('BERT 判断需要截图，已截取，长度: ' + screenshotBase64.length)
+                    logToTerminal('info', 'BERT 判断需要截图，已截取，长度: ' + screenshotBase64.length)
                 }
             }
         }
@@ -1418,5 +1418,70 @@ document.querySelectorAll('.ctx-menu-item').forEach(item => {
         contextMenu.style.display = 'none'
     })
 })
+
+// ===== B站弹幕管理器 =====
+// TTS 读完才处理下一批弹幕，只取最新几条，过时的丢掉
+global.barrageManager = {
+    _buffer: [],         // 弹幕缓冲区
+    _processing: false,  // 是否正在处理（LLM + TTS 播放中）
+    _maxBuffer: 30,      // 缓冲区上限
+    _maxPerBatch: 8,     // 每批最多发 8 条
+
+    addToQueue: function(nickname, text) {
+        if (this._buffer.length >= this._maxBuffer) this._buffer.shift();
+        this._buffer.push({ nickname, text, timestamp: Date.now() });
+        // 当前没有在处理时，立即触发下一批
+        if (!this._processing) this._flush();
+    },
+
+    _flush: async function() {
+        if (this._processing || this._buffer.length === 0) return;
+        this._processing = true;
+
+        // 只取最新的几条，过时的弹幕直接丢掉
+        const batch = this._buffer.splice(-this._maxPerBatch);
+
+        // 构造弹幕摘要，让 LLM 自己决定回哪条
+        const summary = batch.map(m => `${m.nickname}: ${m.text}`).join('\n');
+        const text = `[直播间弹幕]\n${summary}\n\n以上是直播间的最新弹幕，挑你感兴趣的回复一两句，不用每条都回。不感兴趣就不回。`;
+
+        try {
+            showSubtitle('弹幕: ' + batch.slice(-3).map(m => m.nickname).join(', '));
+            await sendMessage(text, { hideSubtitle: true });
+            // 等 TTS 播放完成（sendMessage 返回后 TTS 可能还在播放）
+            await waitForTTS();
+        } catch (e) {
+            console.error('弹幕批次发送失败:', e);
+        }
+
+        this._processing = false;
+
+        // TTS 播完了，如果缓冲区有新弹幕，继续处理下一批
+        if (this._buffer.length > 0) this._flush();
+    }
+};
+
+// 等待 TTS 播放完成
+function waitForTTS() {
+    return new Promise(resolve => {
+        const isTTSDone = () => {
+            if (!ttsStreamProcessor) return true;
+            // 队列有音频、正在处理文本、或客户端正在播放 → 还没完
+            if (ttsStreamProcessor.audioQueue.length > 0) return false;
+            if (ttsStreamProcessor.isProcessing) return false;
+            if (ttsStreamProcessor.ttsClient && ttsStreamProcessor.ttsClient.isPlaying) return false;
+            return true;
+        };
+        const check = () => {
+            if (isTTSDone()) {
+                resolve();
+            } else {
+                setTimeout(check, 500);
+            }
+        };
+        // 先等 3 秒让 TTS 开始播放，再检测状态
+        setTimeout(check, 3000);
+    });
+}
 
 main()
