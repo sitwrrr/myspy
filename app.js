@@ -296,6 +296,197 @@ const chatContainer = document.getElementById('text-chat-container')
 let model = null
 let modelCtrl = null
 
+// 图片模型交互（overlay 只管穿透，交互走 document/overlay 级别）
+const imgOverlay = document.createElement('div')
+imgOverlay.id = 'image-overlay'
+imgOverlay.style.cssText = 'position:fixed;z-index:99997;pointer-events:auto;display:none;'
+document.body.appendChild(imgOverlay)
+let imgDragging = false, imgDragOff = { x: 0, y: 0 }, imgModelActive = false
+let gifRotateTimer = null, gifRotatePath = null, gifCurrentScale = 1
+
+// 创建 GIF <img> 元素，自动缩放并更新 overlay
+function createGifImage(src) {
+    const el = document.createElement('img')
+    el.id = 'gif-model'
+    el.style.cssText = 'position:fixed;z-index:1;pointer-events:none;transform:translate(-50%,-50%);'
+    el.style.left = actualWidth + 'px'
+    el.style.top = (actualHeight * 0.85) + 'px'
+    document.body.appendChild(el)
+    el.onload = () => {
+        const nw = el.naturalWidth, nh = el.naturalHeight
+        global._imgNatW = nw; global._imgNatH = nh
+        const sc = Math.min((actualWidth * 0.8) / nw, (actualHeight * 1.2) / nh, 1)
+        el.style.width = (nw * sc) + 'px'; el.style.height = (nh * sc) + 'px'
+        const sw = nw * sc, sh = nh * sc
+        imgOverlay.style.left = (actualWidth - sw / 2) + 'px'
+        imgOverlay.style.top = (actualHeight * 0.85 - sh / 2) + 'px'
+        imgOverlay.style.width = sw + 'px'; imgOverlay.style.height = sh + 'px'
+        imgOverlay.style.display = 'block'
+        imgModelActive = true
+    }
+    el.src = src
+    return el
+}
+
+function makeGifModel(el) {
+    return {
+        innerModel: el, _isGif: true, visible: true,
+        x: actualWidth, y: actualHeight * 0.85,
+        motion: () => {}, expression: () => {}, setEmotionMapper: () => {}
+    }
+}
+
+// GIF 轮播：随机切换一张 GIF，更新 overlay 尺寸
+function rotateGifOnce() {
+    if (!gifRotatePath || !global.currentModel || !global.currentModel._isGif) return
+    const next = ModelScanner.getRandomGif(gifRotatePath)
+    if (!next) return
+    const el = global.currentModel.innerModel
+    const nw = global._imgNatW || 300, nh = global._imgNatH || 300
+    const baseW = nw * Math.min((actualWidth * 0.8) / nw, (actualHeight * 1.2) / nh, 1)
+    const finalW = baseW * gifCurrentScale
+    const finalH = finalW * (nh / nw)
+    el.style.width = finalW + 'px'
+    el.style.height = finalH + 'px'
+    const cx = parseFloat(el.style.left) || actualWidth
+    const cy = parseFloat(el.style.top) || (actualHeight * 0.85)
+    imgOverlay.style.left = (cx - finalW / 2) + 'px'
+    imgOverlay.style.top = (cy - finalH / 2) + 'px'
+    imgOverlay.style.width = finalW + 'px'
+    imgOverlay.style.height = finalH + 'px'
+    el.onload = () => {
+        const rnw = el.naturalWidth, rnh = el.naturalHeight
+        global._imgNatW = rnw; global._imgNatH = rnh
+        const rb = rnw * Math.min((actualWidth * 0.8) / rnw, (actualHeight * 1.2) / rnh, 1)
+        const rw = rb * gifCurrentScale, rh = rw * (rnh / rnw)
+        el.style.width = rw + 'px'; el.style.height = rh + 'px'
+        const cx2 = parseFloat(el.style.left) || actualWidth
+        const cy2 = parseFloat(el.style.top) || (actualHeight * 0.85)
+        imgOverlay.style.left = (cx2 - rw / 2) + 'px'
+        imgOverlay.style.top = (cy2 - rh / 2) + 'px'
+        imgOverlay.style.width = rw + 'px'; imgOverlay.style.height = rh + 'px'
+    }
+    el.src = next
+}
+function startGifRotation() {
+    clearInterval(gifRotateTimer)
+    gifRotateTimer = setInterval(rotateGifOnce, 5000)
+}
+
+function showImgOverlay(sprite, natW, natH) {
+    const w = natW || sprite.width
+    const h = natH || sprite.height
+    const sw = w * sprite.scale.x / 2
+    const sh = h * sprite.scale.y / 2
+    const cssX = sprite.x / 2, cssY = sprite.y / 2
+    imgOverlay.style.left = (cssX - sw / 2) + 'px'
+    imgOverlay.style.top = (cssY - sh / 2) + 'px'
+    imgOverlay.style.width = sw + 'px'
+    imgOverlay.style.height = sh + 'px'
+    imgOverlay.style.display = 'block'
+    imgModelActive = true
+    logToTerminal('info', `img overlay: ${sw.toFixed(0)}x${sh.toFixed(0)} at ${cssX.toFixed(0)},${cssY.toFixed(0)}`)
+}
+
+// 穿透控制：mouseenter 启用交互，mouseleave 恢复穿透
+imgOverlay.addEventListener('mouseenter', () => {
+    ipcRenderer.send('set-ignore-mouse-events', { ignore: false, options: { forward: false } })
+})
+imgOverlay.addEventListener('mouseleave', () => {
+    if (!imgDragging) {
+        ipcRenderer.send('set-ignore-mouse-events', { ignore: true, options: { forward: true } })
+    }
+})
+
+// 拖拽起点（overlay mousedown）
+imgOverlay.addEventListener('mousedown', (e) => {
+    imgDragging = true
+    const m = global.currentModel
+    if (m && m.innerModel) {
+        if (m._isGif) {
+            imgDragOff.x = e.clientX
+            imgDragOff.y = e.clientY
+        } else {
+            imgDragOff.x = e.clientX - m.innerModel.x / 2
+            imgDragOff.y = e.clientY - m.innerModel.y / 2
+        }
+    }
+    e.preventDefault()
+})
+
+// 拖拽移动（document mousemove，不依赖 overlay）
+document.addEventListener('mousemove', (e) => {
+    if (!imgDragging) return
+    const m = global.currentModel
+    if (!m || !m.innerModel) return
+    if (m._isGif) {
+        m.innerModel.style.left = e.clientX + 'px'
+        m.innerModel.style.top = e.clientY + 'px'
+        const dw = parseFloat(m.innerModel.style.width) || 100
+        const dh = parseFloat(m.innerModel.style.height) || 100
+        imgOverlay.style.left = (e.clientX - dw / 2) + 'px'
+        imgOverlay.style.top = (e.clientY - dh / 2) + 'px'
+    } else {
+        m.innerModel.x = (e.clientX - imgDragOff.x) * 2
+        m.innerModel.y = (e.clientY - imgDragOff.y) * 2
+        const natW = global._imgNatW || 100, natH = global._imgNatH || 100
+        const sw = natW * m.innerModel.scale.x / 2
+        const sh = natH * m.innerModel.scale.y / 2
+        imgOverlay.style.left = (e.clientX - sw / 2) + 'px'
+        imgOverlay.style.top = (e.clientY - sh / 2) + 'px'
+    }
+})
+
+// 拖拽结束（document mouseup）
+document.addEventListener('mouseup', (e) => {
+    if (!imgDragging) return
+    imgDragging = false
+    const rect = imgOverlay.getBoundingClientRect()
+    if (e.clientX < rect.left || e.clientX > rect.right
+        || e.clientY < rect.top || e.clientY > rect.bottom) {
+        ipcRenderer.send('set-ignore-mouse-events', { ignore: true, options: { forward: true } })
+    }
+})
+
+// 滚轮缩放（document 级别，仅在 overlay 区域内生效）
+document.addEventListener('wheel', (e) => {
+    if (!imgModelActive || !global.currentModel || !global.currentModel.innerModel) return
+    const rect = imgOverlay.getBoundingClientRect()
+    if (e.clientX < rect.left || e.clientX > rect.right
+        || e.clientY < rect.top || e.clientY > rect.bottom) return
+    e.preventDefault()
+    const m = global.currentModel
+    const natW = global._imgNatW || 100, natH = global._imgNatH || 100
+    const d = e.deltaY > 0 ? 0.9 : 1.1
+    if (m._isGif) {
+        gifCurrentScale *= d
+        gifCurrentScale = Math.max(0.2, Math.min(3, gifCurrentScale))
+        const el = m.innerModel
+        const baseW = natW * Math.min((actualWidth * 0.8) / natW, (actualHeight * 1.2) / natH, 1)
+        const nw = baseW * gifCurrentScale
+        const nh = nw * (natH / natW)
+        el.style.width = nw + 'px'
+        el.style.height = nh + 'px'
+        const centerX = parseFloat(el.style.left) || actualWidth
+        const centerY = parseFloat(el.style.top) || (actualHeight * 0.85)
+        imgOverlay.style.left = (centerX - nw / 2) + 'px'
+        imgOverlay.style.top = (centerY - nh / 2) + 'px'
+        imgOverlay.style.width = nw + 'px'
+        imgOverlay.style.height = nh + 'px'
+    } else {
+        const sprite = m.innerModel
+        const ns = Math.max(0.1, Math.min(5, sprite.scale.x * d))
+        sprite.scale.set(ns)
+        const sw = natW * sprite.scale.x / 2
+        const sh = natH * sprite.scale.y / 2
+        const cssX = sprite.x / 2, cssY = sprite.y / 2
+        imgOverlay.style.left = (cssX - sw / 2) + 'px'
+        imgOverlay.style.top = (cssY - sh / 2) + 'px'
+        imgOverlay.style.width = sw + 'px'
+        imgOverlay.style.height = sh + 'px'
+    }
+}, { passive: false })
+
 // 鼠标是否在交互区域（模型或聊天框）
 let mouseOverInteractive = false
 
@@ -392,6 +583,74 @@ async function main() {
                 logToTerminal('error', 'VRM 加载失败: ' + vrmErr.message)
                 console.error('VRM 加载失败:', vrmErr)
             }
+        } else if (modelType === 'image') {
+            // 图片/GIF 模型
+            logToTerminal('info', '正在加载图片模型...')
+            app = new PIXI.Application({
+                view: document.getElementById('canvas'),
+                autoStart: true,
+                transparent: true,
+                width: actualWidth * 2,
+                height: actualHeight * 2
+            })
+            app.view.style.width = `${actualWidth}px`
+            app.view.style.height = `${actualHeight}px`
+
+            // GIF 文件夹：随机选一个
+            let actualModelPath = modelPath
+            let isGifFolder = false
+            try {
+                if (fs.statSync(modelPath).isDirectory()) {
+                    isGifFolder = true
+                    gifRotatePath = modelPath
+                    gifCurrentScale = 1
+                    const randomGif = ModelScanner.getRandomGif(modelPath)
+                    if (randomGif) {
+                        actualModelPath = randomGif
+                        logToTerminal('info', '随机选择GIF: ' + path.basename(randomGif))
+                    }
+                }
+            } catch (e) {}
+
+            const isGif = actualModelPath.toLowerCase().endsWith('.gif')
+
+            if (isGif) {
+                const gifEl = createGifImage(actualModelPath)
+                if (isGifFolder) startGifRotation()
+                model = makeGifModel(gifEl)
+            } else {
+                const sprite = PIXI.Sprite.from(modelPath)
+                const maxH = actualHeight * 1.2
+                const maxW = actualWidth * 0.8
+                const scaleX = maxW / sprite.width
+                const scaleY = maxH / sprite.height
+                const scale = Math.min(scaleX, scaleY, 1)
+                sprite.scale.set(scale)
+                sprite.anchor.set(0.5)
+                sprite.x = actualWidth
+                sprite.y = actualHeight * 0.85
+                app.stage.addChild(sprite)
+                showImgOverlay(sprite, actualWidth, actualHeight)
+                const img = new Image()
+                img.onload = () => {
+                    global._imgNatW = img.naturalWidth
+                    global._imgNatH = img.naturalHeight
+                    showImgOverlay(sprite, img.naturalWidth, img.naturalHeight)
+                }
+                img.src = modelPath
+                model = {
+                    innerModel: sprite, visible: true,
+                    x: sprite.x, y: sprite.y, scale: sprite.scale,
+                    width: sprite.width, height: sprite.height,
+                    motion: () => {}, expression: () => {},
+                    setEmotionMapper: () => {},
+                    get的表情: () => null, set表情: () => {}
+                }
+            }
+            global.currentModel = model
+            global.pixiApp = app
+
+            logToTerminal('info', '图片模型加载完成: ' + modelPath)
         } else {
             // Live2D 模型
             // 2x canvas（跟原项目一致，支持高分辨率）
@@ -459,8 +718,78 @@ async function main() {
                 if (newType === 'vrm') {
                     // VRM 模型切换需要重启
                     log('VRM 模型切换需要重启桌宠生效')
+                } else if (newType === 'image') {
+                    // GIF 文件夹：随机选一个
+                    let actualNewPath = newPath
+                    let switchIsGifFolder = false
+                    try {
+                        if (fs.statSync(newPath).isDirectory()) {
+                            switchIsGifFolder = true
+                            gifRotatePath = newPath
+                            const randomGif = ModelScanner.getRandomGif(newPath)
+                            if (randomGif) {
+                                actualNewPath = randomGif
+                                log('随机选择GIF: ' + path.basename(randomGif))
+                            }
+                        }
+                    } catch (e) {}
+
+                    // 图片模型切换
+                    if (model && model.innerModel) {
+                        app.stage.removeChild(model.innerModel)
+                    }
+                    // 移除旧 GIF 元素
+                    const oldGif = document.getElementById('gif-model')
+                    if (oldGif) oldGif.remove()
+
+                    const switchIsGif = actualNewPath.toLowerCase().endsWith('.gif')
+                    if (switchIsGif) {
+                        const gifImg = createGifImage(actualNewPath)
+                        model = makeGifModel(gifImg)
+                        global.currentModel = model
+                        if (switchIsGifFolder) startGifRotation()
+                        log('GIF模型已切换: ' + path.basename(actualNewPath))
+                        return
+                    }
+                    const sprite = PIXI.Sprite.from(actualNewPath)
+                    const maxH = actualHeight * 1.2
+                    const maxW = actualWidth * 0.8
+                    const scX = maxW / sprite.width
+                    const scY = maxH / sprite.height
+                    const sc = Math.min(scX, scY, 1)
+                    sprite.scale.set(sc)
+                    sprite.anchor.set(0.5)
+                    sprite.x = actualWidth
+                    sprite.y = actualHeight * 0.85
+                    app.stage.addChild(sprite)
+
+                    // 显示 overlay
+                    showImgOverlay(sprite, actualWidth, actualHeight)
+
+                    const img2 = new Image()
+                    img2.onload = () => {
+                        global._imgNatW = img2.naturalWidth
+                        global._imgNatH = img2.naturalHeight
+                        showImgOverlay(sprite, img2.naturalWidth, img2.naturalHeight)
+                    }
+                    img2.src = newPath
+
+                    model = {
+                        innerModel: sprite, visible: true,
+                        x: sprite.x, y: sprite.y, scale: sprite.scale,
+                        width: sprite.width, height: sprite.height,
+                        motion: () => {}, expression: () => {},
+                        setEmotionMapper: () => {}
+                    }
+                    global.currentModel = model
+                    log('图片模型已切换: ' + newPath)
                 } else {
                     // Live2D 模型切换
+                    clearInterval(gifRotateTimer)
+                    gifRotatePath = null
+                    imgOverlay.style.display = 'none'
+                    imgModelActive = false
+                    ipcRenderer.send('set-ignore-mouse-events', { ignore: true, options: { forward: true } })
                     if (model && model.innerModel) {
                         app.stage.removeChild(model.innerModel)
                     }

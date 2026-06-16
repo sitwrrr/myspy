@@ -1,17 +1,19 @@
 // model-scanner.js - 模型自动检测
-// 扫描 2D/ 和 3D/ 目录，自动发现可用模型
+// 扫描 2D/、3D/ 和 images/ 目录，自动发现可用模型
 
 const fs = require('fs');
 const path = require('path');
+
+const IMAGE_EXTS = ['.gif', '.png', '.jpg', '.jpeg', '.webp', '.bmp'];
 
 class ModelScanner {
     /**
      * 扫描所有可用模型
      * @param {string} basePath - 项目根目录
-     * @returns {{ live2d: Array<{name, path, dir}>, vrm: Array<{name, path, dir}> }}
+     * @returns {{ live2d: Array, vrm: Array, images: Array }}
      */
     static scan(basePath) {
-        const result = { live2d: [], vrm: [] };
+        const result = { live2d: [], vrm: [], images: [] };
 
         // 扫描 2D 目录（Live2D 模型）
         const dir2D = path.join(basePath, '2D');
@@ -23,6 +25,12 @@ class ModelScanner {
         const dir3D = path.join(basePath, '3D');
         if (fs.existsSync(dir3D)) {
             result.vrm = ModelScanner._scanVRM(dir3D);
+        }
+
+        // 扫描 images 目录（图片/GIF 模型）
+        const dirImages = path.join(basePath, 'images');
+        if (fs.existsSync(dirImages)) {
+            result.images = ModelScanner._scanImages(dirImages);
         }
 
         return result;
@@ -84,6 +92,65 @@ class ModelScanner {
     }
 
     /**
+     * 扫描图片模型（查找 .gif .png .jpg 等文件）
+     */
+    static _scanImages(dir) {
+        const models = [];
+        try {
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+                const fullPath = path.join(dir, file);
+                const stat = fs.statSync(fullPath);
+                const ext = path.extname(file).toLowerCase();
+
+                if (stat.isDirectory()) {
+                    // 子文件夹：扫描里面的 GIF
+                    const gifs = ModelScanner._scanGifsInDir(fullPath);
+                    if (gifs.length > 0) {
+                        models.push({
+                            name: file + ' (随机GIF)',
+                            path: fullPath,
+                            type: 'image',
+                            isGifFolder: true,
+                            gifCount: gifs.length
+                        });
+                    }
+                } else if (IMAGE_EXTS.includes(ext)) {
+                    models.push({
+                        name: path.basename(file, ext),
+                        file: file,
+                        path: file,
+                        dir: dir,
+                        type: 'image'
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('扫描图片模型失败:', e.message);
+        }
+        return models;
+    }
+
+    static _scanGifsInDir(dir) {
+        const gifs = [];
+        try {
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+                if (file.toLowerCase().endsWith('.gif')) {
+                    gifs.push(path.join(dir, file));
+                }
+            }
+        } catch (e) {}
+        return gifs;
+    }
+
+    static getRandomGif(dirPath) {
+        const gifs = ModelScanner._scanGifsInDir(dirPath);
+        if (gifs.length === 0) return null;
+        return gifs[Math.floor(Math.random() * gifs.length)];
+    }
+
+    /**
      * 自动检测模型类型（根据文件路径）
      * @param {string} modelPath - 模型路径
      * @returns {'live2d'|'vrm'|null}
@@ -93,6 +160,14 @@ class ModelScanner {
         const lower = modelPath.toLowerCase();
         if (lower.endsWith('.vrm')) return 'vrm';
         if (lower.endsWith('.model3.json') || lower.endsWith('.model.json')) return 'live2d';
+        if (IMAGE_EXTS.some(ext => lower.endsWith(ext))) return 'image';
+        // 目录：检查是否包含 GIF
+        try {
+            if (fs.statSync(modelPath).isDirectory()) {
+                const gifs = ModelScanner._scanGifsInDir(modelPath);
+                if (gifs.length > 0) return 'image';
+            }
+        } catch (e) {}
         return null;
     }
 
@@ -138,6 +213,14 @@ class ModelScanner {
                 path: `2D/${m.path}`,
                 name: m.name,
                 label: `[2D] ${m.name}`
+            });
+        }
+        for (const m of all.images) {
+            list.push({
+                type: 'image',
+                path: `images/${m.path}`,
+                name: m.name,
+                label: `[图片] ${m.name}`
             });
         }
         return list;

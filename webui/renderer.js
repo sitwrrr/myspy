@@ -871,6 +871,72 @@ async function refreshModels() {
         modelList.appendChild(empty);
     }
 
+    // ===== 图片/GIF 模型 =====
+    const sectionImg = document.createElement('div');
+    sectionImg.innerHTML = '<div style="color:#888;font-size:13px;font-weight:600;margin:12px 0 4px;">图片</div>';
+    modelList.appendChild(sectionImg);
+
+    const imgDir = path.join(__dirname, '..', 'images');
+    const imgExts = ['.gif', '.png', '.jpg', '.jpeg', '.webp', '.bmp'];
+    let hasImg = false;
+    if (fs.existsSync(imgDir)) {
+        fs.readdirSync(imgDir).forEach(file => {
+            const fullPath = path.join(imgDir, file);
+            const relPath = 'images/' + file;
+            try {
+                const stat = fs.statSync(fullPath);
+                if (stat.isDirectory()) {
+                    // 子文件夹：检查是否有 GIF
+                    const gifs = fs.readdirSync(fullPath).filter(f => f.toLowerCase().endsWith('.gif'));
+                    if (gifs.length > 0) {
+                        hasImg = true;
+                        const item = document.createElement('div');
+                        item.className = 'model-item';
+                        const isCurrent = currentModelPath === relPath;
+                        item.textContent = '[GIF] ' + file + ' (' + gifs.length + '个)';
+                        if (isCurrent) item.style.borderLeft = '3px solid #66bb6a';
+                        item.addEventListener('click', () => {
+                            if (confirm('随机切换到 ' + file + ' 中的GIF？')) {
+                                config.ui.model_type = 'image';
+                                config.ui.model_path = relPath;
+                                fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
+                                ipcRenderer.send('switch-model', fullPath);
+                                refreshModels();
+                            }
+                        });
+                        modelList.appendChild(item);
+                    }
+                } else {
+                    const ext = path.extname(file).toLowerCase();
+                    if (imgExts.includes(ext)) {
+                        hasImg = true;
+                        const item = document.createElement('div');
+                        item.className = 'model-item';
+                        const isCurrent = currentModelPath === relPath;
+                        item.textContent = relPath;
+                        if (isCurrent) item.style.borderLeft = '3px solid #66bb6a';
+                        item.addEventListener('click', () => {
+                            if (confirm('确定切换到图片: ' + relPath + '？')) {
+                                config.ui.model_type = 'image';
+                                config.ui.model_path = relPath;
+                                fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
+                                ipcRenderer.send('switch-model', fullPath);
+                                refreshModels();
+                            }
+                        });
+                        modelList.appendChild(item);
+                    }
+                }
+            } catch (e) {}
+        });
+    }
+    if (!hasImg) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'color:#555;font-size:13px;padding:4px 0;';
+        empty.textContent = '无图片（放入 images/ 目录）';
+        modelList.appendChild(empty);
+    }
+
     // 刷新后加载情绪映射配置
     loadEmotionMapping();
 }
